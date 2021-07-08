@@ -30,36 +30,34 @@
  * @description This constructor is not exposed in the public Kokopu API. Only internal objects and functions
  *              are allowed to instantiate {@link Database} objects.
  */
-var Database = exports.Database = function(impl, gameCountGetter, gameGetter) {
-	this._impl = impl;
-	this._gameCountGetter = gameCountGetter;
-	this._gameGetter = gameGetter;
-};
+class Database {
+	constructor(impl, gameCountGetter, gameGetter) {
+		this._impl = impl;
+		this._gameCountGetter = gameCountGetter;
+		this._gameGetter = gameGetter;
+	}
+	/**
+	 * Number of games in the database.
+	 *
+	 * @returns {number}
+	 */
+	gameCount() {
+		return this._gameCountGetter(this._impl);
+	}
+	game(index) {
+		return this._gameGetter(this._impl, index);
+	}
+	/**
+	 * Return the errors generated when creating the database.
+	 */
+	errors() {
+		return this._impl.errors;
+	}
+}
+
+exports.Database = Database
 
 
-/**
- * Number of games in the database.
- *
- * @returns {number}
- */
-Database.prototype.gameCount = function() {
-	return this._gameCountGetter(this._impl);
-};
 
 
-/**
- * Return the game corresponding to the given index.
- *
- * @param {number} index Between 0 inclusive and {@link Database#gameCount} exclusive.
- * @returns {Game}
- */
-Database.prototype.game = function(index) {
-	return this._gameGetter(this._impl, index);
-};
 
-/**
- * Return the errors generated when creating the database.
- */
-Database.prototype.errors = function() {
-	return this._impl.errors;
-};

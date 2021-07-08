@@ -35,18 +35,22 @@
  * @classdesc Exception thrown when an invalid argument is passed to a function.
  * @static
  */
-var IllegalArgument = exports.IllegalArgument = function(functionName) {
+class IllegalArgument {
+	constructor(functionName) {
 
-	/**
-	 * Name of the function that raises the exception.
-	 * @member {string}
-	 */
-	this.functionName = functionName;
-};
+		/**
+		 * Name of the function that raises the exception.
+		 * @member {string}
+		 */
+		this.functionName = functionName;
+	}
+	toString() {
+		return 'Illegal argument in function ' + this.functionName;
+	}
+}
 
-IllegalArgument.prototype.toString = function() {
-	return 'Illegal argument in function ' + this.functionName;
-};
+exports.IllegalArgument = IllegalArgument
+
 
 
 
@@ -55,24 +59,28 @@ IllegalArgument.prototype.toString = function() {
  * @classdesc Exception thrown by the FEN parsing functions.
  * @static
  */
-var InvalidFEN = exports.InvalidFEN = function(fen, message) {
+class InvalidFEN {
+	constructor(fen, message) {
 
-	/**
-	 * FEN string that causes the error.
-	 * @member {string}
-	 */
-	this.fen = fen;
+		/**
+		 * FEN string that causes the error.
+		 * @member {string}
+		 */
+		this.fen = fen;
 
-	/**
-	 * Human-readable message describing the error.
-	 * @member {string}
-	 */
-	this.message = buildMessage(message, 2, arguments);
-};
+		/**
+		 * Human-readable message describing the error.
+		 * @member {string}
+		 */
+		this.message = buildMessage(message, 2, arguments);
+	}
+	toString() {
+		return toStringImpl('InvalidFEN', this.message);
+	}
+}
 
-InvalidFEN.prototype.toString = function() {
-	return toStringImpl('InvalidFEN', this.message);
-};
+exports.InvalidFEN = InvalidFEN
+
 
 
 
@@ -81,30 +89,34 @@ InvalidFEN.prototype.toString = function() {
  * @classdesc Exception thrown by the move notation parsing functions.
  * @static
  */
-var InvalidNotation = exports.InvalidNotation = function(fen, notation, message) {
+class InvalidNotation {
+	constructor(fen, notation, message) {
 
-	/**
-	 * FEN representation of the position used to interpret the move notation.
-	 * @member {string}
-	 */
-	this.fen = fen;
+		/**
+		 * FEN representation of the position used to interpret the move notation.
+		 * @member {string}
+		 */
+		this.fen = fen;
 
-	/**
-	 * Move notation that causes the error.
-	 * @member {string}
-	 */
-	this.notation = notation;
+		/**
+		 * Move notation that causes the error.
+		 * @member {string}
+		 */
+		this.notation = notation;
 
-	/**
-	 * Human-readable message describing the error.
-	 * @member {string}
-	 */
-	this.message = buildMessage(message, 3, arguments);
-};
+		/**
+		 * Human-readable message describing the error.
+		 * @member {string}
+		 */
+		this.message = buildMessage(message, 3, arguments);
+	}
+	toString() {
+		return toStringImpl('InvalidNotation', this.message);
+	}
+}
 
-InvalidNotation.prototype.toString = function() {
-	return toStringImpl('InvalidNotation', this.message);
-};
+exports.InvalidNotation = InvalidNotation
+
 
 
 /**
@@ -112,66 +124,74 @@ InvalidNotation.prototype.toString = function() {
  * @classdesc Exception thrown by the PGN parsing functions.
  * @static
  */
-var InvalidPGN = exports.InvalidPGN = function(pgn, index, lineNumber, message) {
+class InvalidPGN {
+	constructor(pgn, index, lineNumber, message) {
 
-	/**
-	 * PGN string that causes the error.
-	 * @member {string}
-	 */
-	this.pgn = pgn;
+		/**
+		 * PGN string that causes the error.
+		 * @member {string}
+		 */
+		this.pgn = pgn;
 
-	/**
-	 * Index of the character in the PGN string where the parsing fails (or a negative value is no particular character is related to the error).
-	 * @member {number}
-	 */
-	this.index = index;
+		/**
+		 * Index of the character in the PGN string where the parsing fails (or a negative value is no particular character is related to the error).
+		 * @member {number}
+		 */
+		this.index = index;
 
-	/**
-	 * Current line number
-	 */
-	this.lineNumber = lineNumber;
+		/**
+		 * Current line number
+		 */
+		this.lineNumber = lineNumber;
 
-	/**
-	 * Human-readable message describing the error.
-	 * @member {string}
-	 */
-	this.message = buildMessage(message, 3, arguments);
-};
+		/**
+		 * Human-readable message describing the error.
+		 * @member {string}
+		 */
+		this.message = buildMessage(message, 3, arguments);
+	}
+	toString() {
+		return toStringImpl('InvalidPGN', '[' + this.index + '] ' + this.message);
+	}
+}
 
-InvalidPGN.prototype.toString = function() {
-	return toStringImpl('InvalidPGN', '[' + this.index + '] ' + this.message);
-};
+exports.InvalidPGN = InvalidPGN
+
 
 /**
  * @class
  * @classdesc Exception thrown by the JSON parsing functions.
  * @static
  */
-var InvalidJSON = exports.InvalidJSON = function(json, index, message) {
+class InvalidJSON {
+	constructor(json, index, message) {
 
-	/**
-	 * JSON string that causes the error.
-	 * @member {string}
-	 */
-	this.json = json;
+		/**
+		 * JSON string that causes the error.
+		 * @member {string}
+		 */
+		this.json = json;
 
-	/**
-	 * Index of the character in the JSON string where the parsing fails (or a negative value is no particular character is related to the error).
-	 * @member {number}
-	 */
-	this.index = index;
+		/**
+		 * Index of the character in the JSON string where the parsing fails (or a negative value is no particular character is related to the error).
+		 * @member {number}
+		 */
+		this.index = index;
 
 
-	/**
-	 * Human-readable message describing the error.
-	 * @member {string}
-	 */
-	this.message = buildMessage(message, 3, arguments);
-};
+		/**
+		 * Human-readable message describing the error.
+		 * @member {string}
+		 */
+		this.message = buildMessage(message, 3, arguments);
+	}
+	toString() {
+		return toStringImpl('InvalidJSON', '[' + this.index + '] ' + this.message);
+	}
+}
 
-InvalidJSON.prototype.toString = function() {
-	return toStringImpl('InvalidJSON', '[' + this.index + '] ' + this.message);
-};
+exports.InvalidJSON = InvalidJSON
+
 
 
 

@@ -31,47 +31,173 @@ var i18n = require('../i18n');
  * @class
  * @classdesc Stream of tokens.
  */
-var TokenStream = exports.TokenStream = function(pgnString, initialPosition) {
+class TokenStream {
+	constructor(pgnString, initialPosition) {
 
-	// Remove the BOM (byte order mark) if any.
-	if(pgnString.codePointAt(0) === 0xFEFF) {
-		pgnString = pgnString.substr(1);
+		// Remove the BOM (byte order mark) if any.
+		if (pgnString.codePointAt(0) === 0xFEFF) {
+			pgnString = pgnString.substr(1);
+		}
+
+		this._text = pgnString; // what is being parsed
+		this._pos = initialPosition; // current position in the string
+		this._emptyLineFound = false; // whether an empty line has been encountered while parsing the current token
+		this._lineCount = 1; // the current line number starting at 1
+		this._token = 0; // current token
+		this._tokenValue = null; // current token value (if any)
+		this._tokenIndex = 0; // position of the current token in the string
+
+
+		// Space-like matchers
+		this._matchSpaces = /[ \f\t\v]+/g;
+		this._matchLineBreak = /\r?\n|\r/g;
+		this._matchCommentLineBreak = /\r?\n|\r/g; // allow matching comment linebreaks separately
+
+
+		// Token matchers
+		this._matchHeaderRegular = /\[\s*(\w+)\s+"((?:[^\\"]|\\[\\"])*)"\s*\]/g;
+		this._matchHeaderDegenerated = /^\[\s*(\w+)\s+"(.*)"\s*\]$/mg;
+		this._matchMove = /(?:[1-9][0-9]*\s*\.(?:\.\.)?\s*)?((?:O-O-O|0-0-0|O-O|0-0|[KQRBN][a-h]?[1-8]?x?[a-h][1-8]|(?:[a-h]x?)?[a-h][1-8](?:=?[KQRBNP])?)[+#]?|--)/g;
+		this._matchNag = /([!?][!?]?|\+\/?[-=]|[-=]\/?\+|=|inf|~)|\$([1-9][0-9]*)/g;
+		this._matchComment = /\{((?:[^{}\\]|\\[{}\\])*)\}/g;
+		this._matchBeginVariation = /\(/g;
+		this._matchEndVariation = /\)/g;
+		this._matchEndOfGame = /1-0|0-1|1\/2-1\/2|\*/g;
+
+		this._matchSpaces.matchedIndex = -1;
+		this._matchLineBreak.matchedIndex = -1;
+		this._matchHeaderRegular.matchedIndex = -1;
+		this._matchHeaderDegenerated.matchedIndex = -1;
+		this._matchMove.matchedIndex = -1;
+		this._matchNag.matchedIndex = -1;
+		this._matchComment.matchedIndex = -1;
+		this._matchBeginVariation.matchedIndex = -1;
+		this._matchEndVariation.matchedIndex = -1;
+		this._matchEndOfGame.matchedIndex = -1;
 	}
+	/**
+	 * Try to consume 1 token.
+	 *
+	 * @return {boolean} `true` if a token could have been read, `false` if the end of the text has been reached.
+	 * @throws {module:exception.InvalidPGN} If the text cannot be interpreted as a valid token.
+	 */
+	consumeToken() {
 
-	this._text           = pgnString;       // what is being parsed
-	this._pos            = initialPosition; // current position in the string
-	this._emptyLineFound = false;           // whether an empty line has been encountered while parsing the current token
-	this._lineCount      = 1;               // the current line number starting at 1
-	this._token          = 0;               // current token
-	this._tokenValue     = null;            // current token value (if any)
-	this._tokenIndex     = 0;               // position of the current token in the string
+		// Consume blank (i.e. meaning-less) characters
+		skipBlanks(this);
+		if (this._pos >= this._text.length) {
+			this._tokenIndex = this._text.length;
+			return false;
+		}
 
-	// Space-like matchers
-	this._matchSpaces = /[ \f\t\v]+/g;
-	this._matchLineBreak = /\r?\n|\r/g;
-	this._matchCommentLineBreak = /\r?\n|\r/g; // allow matching comment linebreaks separately
+		// Remaining part of the string
+		this._tokenIndex = this._pos;
 
-	// Token matchers
-	this._matchHeaderRegular = /\[\s*(\w+)\s+"((?:[^\\"]|\\[\\"])*)"\s*\]/g;
-	this._matchHeaderDegenerated = /^\[\s*(\w+)\s+"(.*)"\s*\]$/mg;
-	this._matchMove = /(?:[1-9][0-9]*\s*\.(?:\.\.)?\s*)?((?:O-O-O|0-0-0|O-O|0-0|[KQRBN][a-h]?[1-8]?x?[a-h][1-8]|(?:[a-h]x?)?[a-h][1-8](?:=?[KQRBNP])?)[+#]?|--)/g;
-	this._matchNag = /([!?][!?]?|\+\/?[-=]|[-=]\/?\+|=|inf|~)|\$([1-9][0-9]*)/g;
-	this._matchComment = /\{((?:[^{}\\]|\\[{}\\])*)\}/g;
-	this._matchBeginVariation = /\(/g;
-	this._matchEndVariation = /\)/g;
-	this._matchEndOfGame = /1-0|0-1|1\/2-1\/2|\*/g;
+		// Match a game header (ex: [White "Kasparov, G."])
+		if (testAtPos(this, this._matchHeaderRegular)) {
+			this._token = TOKEN_HEADER;
+			this._tokenValue = { key: this._matchHeaderRegular.matched[1], value: parseHeaderValue(this._matchHeaderRegular.matched[2]) };
+		}
+		else if (testAtPos(this, this._matchHeaderDegenerated)) {
+			this._token = TOKEN_HEADER;
+			this._tokenValue = { key: this._matchHeaderDegenerated.matched[1], value: this._matchHeaderDegenerated.matched[2] };
+		}
 
-	this._matchSpaces.matchedIndex = -1;
-	this._matchLineBreak.matchedIndex = -1;
-	this._matchHeaderRegular.matchedIndex = -1;
-	this._matchHeaderDegenerated.matchedIndex = -1;
-	this._matchMove.matchedIndex = -1;
-	this._matchNag.matchedIndex = -1;
-	this._matchComment.matchedIndex = -1;
-	this._matchBeginVariation.matchedIndex = -1;
-	this._matchEndVariation.matchedIndex = -1;
-	this._matchEndOfGame.matchedIndex = -1;
-};
+
+		// Match a move or a null-move
+		else if (testAtPos(this, this._matchMove)) {
+			this._token = TOKEN_MOVE;
+			if (this._matchMove.matched[1] === '0-0') {
+				this._tokenValue = 'O-O';
+			} else if (this._matchMove.matched[1] === '0-0-0') {
+				this._tokenValue = 'O-O-O';
+			} else {
+				this._tokenValue = this._matchMove.matched[1];
+			}
+		}
+
+
+		// Match a NAG
+		else if (testAtPos(this, this._matchNag)) {
+			this._token = TOKEN_NAG;
+			this._tokenValue = this._matchNag.matched[2] === undefined ? SPECIAL_NAGS_LOOKUP[this._matchNag.matched[1]] :
+				parseInt(this._matchNag.matched[2], 10);
+		}
+
+
+		// Match a comment
+		else if (testAtPos(this, this._matchComment)) {
+			this._token = TOKEN_COMMENT;
+			this._tokenValue = parseCommentValue(this, this._matchComment.matched[1]);
+		}
+
+
+		// Match the beginning of a variation
+		else if (testAtPos(this, this._matchBeginVariation)) {
+			this._token = TOKEN_BEGIN_VARIATION;
+			this._tokenValue = null;
+		}
+
+
+		// Match the end of a variation
+		else if (testAtPos(this, this._matchEndVariation)) {
+			this._token = TOKEN_END_VARIATION;
+			this._tokenValue = null;
+		}
+
+
+		// Match a end-of-game marker
+		else if (testAtPos(this, this._matchEndOfGame)) {
+			this._token = TOKEN_END_OF_GAME;
+			this._tokenValue = this._matchEndOfGame.matched[0];
+		}
+
+
+		// Otherwise, the string is badly formatted with respect to the PGN syntax
+		else {
+			throw new exception.InvalidPGN(this._text, this._pos, this._lineCount, i18n.INVALID_PGN_TOKEN);
+		}
+
+		return true;
+	}
+	skipToNextGame() {
+		while (this._pos < this._text.length) {
+			if (testAtPos(this, this._matchEndOfGame)) {
+				++this._pos;
+				return true;
+			}
+			++this._pos;
+		}
+		return false;
+	}
+	currentPosition() {
+		return this._pos;
+	}
+	emptyLineFound() {
+		return this._emptyLineFound;
+	}
+	token() {
+		return this._token;
+	}
+	tokenValue() {
+		return this._tokenValue;
+	}
+	tokenIndex() {
+		return this._tokenIndex;
+	}
+	invalidPGNException(tokenIndex) {
+		var constructorArguments = [this._text];
+		if (typeof tokenIndex !== 'number') {
+			constructorArguments.push(this._tokenIndex);
+		}
+		Array.prototype.push.apply(constructorArguments, arguments);
+
+		var result = Object.create(exception.InvalidPGN.prototype);
+		exception.InvalidPGN.apply(result, constructorArguments);
+		return result;
+	}
+}
+exports.TokenStream = TokenStream
 
 
 // PGN token types
@@ -195,129 +321,16 @@ var SPECIAL_NAGS_LOOKUP = {
 };
 
 
-/**
- * Try to consume 1 token.
- *
- * @return {boolean} `true` if a token could have been read, `false` if the end of the text has been reached.
- * @throws {module:exception.InvalidPGN} If the text cannot be interpreted as a valid token.
- */
-TokenStream.prototype.consumeToken = function() {
-
-	// Consume blank (i.e. meaning-less) characters
-	skipBlanks(this);
-	if(this._pos >= this._text.length) {
-		this._tokenIndex = this._text.length;
-		return false;
-	}
-
-	// Remaining part of the string
-	this._tokenIndex = this._pos;
-
-	// Match a game header (ex: [White "Kasparov, G."])
-	if(testAtPos(this, this._matchHeaderRegular)) {
-		this._token      = TOKEN_HEADER;
-		this._tokenValue = { key: this._matchHeaderRegular.matched[1], value: parseHeaderValue(this._matchHeaderRegular.matched[2]) };
-	}
-	else if(testAtPos(this, this._matchHeaderDegenerated)) {
-		this._token      = TOKEN_HEADER;
-		this._tokenValue = { key: this._matchHeaderDegenerated.matched[1], value: this._matchHeaderDegenerated.matched[2] };
-	}
-
-	// Match a move or a null-move
-	else if(testAtPos(this, this._matchMove)) {
-		this._token      = TOKEN_MOVE;
-		if (this._matchMove.matched[1] === '0-0') {
-			this._tokenValue = 'O-O';
-		} else if (this._matchMove.matched[1] === '0-0-0') {
-			this._tokenValue = 'O-O-O';
-		} else {
-			this._tokenValue = this._matchMove.matched[1];
-		}
-	}
-
-	// Match a NAG
-	else if(testAtPos(this, this._matchNag)) {
-		this._token      = TOKEN_NAG;
-		this._tokenValue = this._matchNag.matched[2] === undefined ? SPECIAL_NAGS_LOOKUP[this._matchNag.matched[1]] :
-			parseInt(this._matchNag.matched[2], 10);
-	}
-
-	// Match a comment
-	else if(testAtPos(this, this._matchComment)) {
-		this._token      = TOKEN_COMMENT;
-		this._tokenValue = parseCommentValue(this, this._matchComment.matched[1]);
-	}
-
-	// Match the beginning of a variation
-	else if(testAtPos(this, this._matchBeginVariation)) {
-		this._token      = TOKEN_BEGIN_VARIATION;
-		this._tokenValue = null;
-	}
-
-	// Match the end of a variation
-	else if(testAtPos(this, this._matchEndVariation)) {
-		this._token      = TOKEN_END_VARIATION;
-		this._tokenValue = null;
-	}
-
-	// Match a end-of-game marker
-	else if(testAtPos(this, this._matchEndOfGame)) {
-		this._token      = TOKEN_END_OF_GAME;
-		this._tokenValue = this._matchEndOfGame.matched[0];
-	}
-
-	// Otherwise, the string is badly formatted with respect to the PGN syntax
-	else {
-		throw new exception.InvalidPGN(this._text, this._pos, this._lineCount, i18n.INVALID_PGN_TOKEN);
-	}
-
-	return true;
-};
-
-TokenStream.prototype.skipToNextGame = function() {
-	while(this._pos < this._text.length) {
-		if(testAtPos(this, this._matchEndOfGame)) {
-			++this._pos;
-			return true;
-		}
-		++this._pos;
-	}
-	return false;
-};
-
-TokenStream.prototype.currentPosition = function() {
-	return this._pos;
-};
 
 
-TokenStream.prototype.emptyLineFound = function() {
-	return this._emptyLineFound;
-};
 
 
-TokenStream.prototype.token = function() {
-	return this._token;
-};
 
 
-TokenStream.prototype.tokenValue = function() {
-	return this._tokenValue;
-};
 
 
-TokenStream.prototype.tokenIndex = function() {
-	return this._tokenIndex;
-};
 
 
-TokenStream.prototype.invalidPGNException = function(tokenIndex) {
-	var constructorArguments = [ this._text ];
-	if(typeof tokenIndex !== 'number') {
-		constructorArguments.push(this._tokenIndex);
-	}
-	Array.prototype.push.apply(constructorArguments, arguments);
 
-	var result = Object.create(exception.InvalidPGN.prototype);
-	exception.InvalidPGN.apply(result, constructorArguments);
-	return result;
-};
+
+

@@ -10,15 +10,7 @@ export function isMoveDescriptor(obj: any): boolean;
  * @description This constructor is not exposed in the public Kokopu API. Only internal objects and functions
  *              are allowed to instantiate {@link MoveDescriptor} objects.
  */
-declare function MoveDescriptor(flags: any, from: any, to: any, movingPiece: any, finalPiece: any, optionalPiece: any, optionalSquare1: any, optionalSquare2: any): void;
-declare class MoveDescriptor {
-    /**
-     * @class
-     * @classdesc Describe a legal chess move, with its characteristics.
-     *
-     * @description This constructor is not exposed in the public Kokopu API. Only internal objects and functions
-     *              are allowed to instantiate {@link MoveDescriptor} objects.
-     */
+export class MoveDescriptor {
     constructor(flags: any, from: any, to: any, movingPiece: any, finalPiece: any, optionalPiece: any, optionalSquare1: any, optionalSquare2: any);
     _type: any;
     _from: any;
@@ -134,4 +126,3 @@ declare class MoveDescriptor {
      */
     coloredPromotion(): any;
 }
-export {};

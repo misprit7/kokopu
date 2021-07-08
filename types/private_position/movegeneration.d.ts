@@ -1,0 +1,12 @@
+export function isCheck(position: any): boolean;
+export function isCheckmate(position: any): boolean;
+export function isStalemate(position: any): boolean;
+export function hasMove(position: any): boolean;
+export function moves(position: any): any[];
+export function isKingSafeAfterMove(position: any, from: any, to: any, enPassantSquare: number): boolean | any;
+export function isCastlingLegal(position: any, from: any, to: any): false | moveDescriptor.MoveDescriptor;
+export function isMoveLegal(position: any, from: any, to: any): any;
+export function play(position: any, descriptor: any): void;
+export function isNullMoveLegal(position: any): boolean;
+export function playNullMove(position: any): boolean;
+import moveDescriptor = require("../movedescriptor");

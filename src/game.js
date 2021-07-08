@@ -42,7 +42,7 @@ var Position = require('./position').Position;
  *            and some meta-data such as the name of the players, the date of the game,
  *            the name of the tournament, etc...
  */
-var Game = exports.Game = function() {
+var Game = function() {
 	this._playerName  = [undefined, undefined];
 	this._playerElo   = [undefined, undefined];
 	this._playerTitle = [undefined, undefined];
@@ -58,6 +58,7 @@ var Game = exports.Game = function() {
 	this._fullMoveNumber = 1;
 	this._mainVariationInfo = createVariationInfo(true);
 };
+exports.Game = Game;
 
 
 /**
