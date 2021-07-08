@@ -16,7 +16,7 @@
 		"Atin Malaviya <atinm.dev@gmail.com>"
 	],
 	"main": "index.js",
-	"types": "types", 
+	"types": "index.d.ts", 
 	"devDependencies": {
 		"browserify": "~17.0.0",
 		"eslint": "~7.17.0",
