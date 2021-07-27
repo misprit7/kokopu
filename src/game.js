@@ -317,7 +317,7 @@ Game.prototype.initialPosition = function(initialPosition, fullMoveNumber) {
  * @returns {Variation}
  */
 Game.prototype.mainVariation = function() {
-	return new Variation(this._mainVariationInfo, this._fullMoveNumber, this._initialPosition, true);
+	return new Variation(this._mainVariationInfo, this._fullMoveNumber, this._initialPosition, true, null);
 };
 
 
@@ -402,6 +402,10 @@ function rebuildPositionBeforeIfNecessary(node) {
 		}
 	}
 	return node._positionBefore;
+}
+
+Node.prototype.parentVariation = function() {
+	return new Variation(this._parentVariation)
 }
 
 /**
@@ -526,7 +530,7 @@ Node.prototype.variations = function() {
 	var result = [];
 	var positionBefore = this.positionBefore();
 	for(var i = 0; i < this._info.variations.length; ++i) {
-		result.push(new Variation(this._info.variations[i], this._fullMoveNumber, positionBefore, this._parentVariation._withinLongVariation));
+		result.push(new Variation(this._info.variations[i], this._fullMoveNumber, positionBefore, this._parentVariation._withinLongVariation, this));
 	}
 	return result;
 };
@@ -695,7 +699,7 @@ Node.prototype.play = function(move) {
  */
 Node.prototype.addVariation = function(isLongVariation) {
 	this._info.variations.push(createVariationInfo(isLongVariation));
-	return new Variation(this._info.variations[this._info.variations.length - 1], this._fullMoveNumber, this.positionBefore(), this._parentVariation._withinLongVariation);
+	return new Variation(this._info.variations[this._info.variations.length - 1], this._fullMoveNumber, this.positionBefore(), this._parentVariation._withinLongVariation, this);
 };
 
 
@@ -734,13 +738,28 @@ function createVariationInfo(isLongVariation) {
  * @description This constructor is not exposed in the public Kokopu API. Only internal objects and functions
  *              are allowed to instantiate {@link Variation} objects.
  */
-function Variation(info, initialFullMoveNumber, initialPosition, withinLongVariation) {
-	this._info = info;
-	this._initialFullMoveNumber = initialFullMoveNumber;
-	this._initialPosition = initialPosition;
-	this._withinLongVariation = withinLongVariation && info.isLongVariation;
+function Variation(info, initialFullMoveNumber, initialPosition, withinLongVariation, parentNode) {
+	if (arguments[0] instanceof Variation) {
+		variation = arguments[0]
+		this._info = variation._info
+		this._initialFullMoveNumber = variation.initialFullMoveNumber
+		this._initialPosition = variation._initialFullMoveNumber
+		this._withinLongVariation = variation._withinLongVariation
+		this._parentNode = variation._parentNode
+	} else {
+		this._info = info;
+		this._initialFullMoveNumber = initialFullMoveNumber;
+		this._initialPosition = initialPosition;
+		this._withinLongVariation = withinLongVariation && info.isLongVariation;
+		this._parentVariation = parentNode
+	}
 }
 
+
+
+Variation.prototype.parentNode = function() {
+	return new Node(this._parentNode.info, this._parentNode.parentVariation, this.parentNode.fullMoveNumber, this._parentNode.positionBefore)
+}
 
 /**
  * Whether the current variation is considered as a "long" variation, i.e. a variation that
