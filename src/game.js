@@ -761,7 +761,7 @@ Variation.prototype.parentNode = function() {
 	if(this._parentNode == null){
 		return null
 	} else {
-		return new Node(this._parentNode.info, this._parentNode.parentVariation, this.parentNode.fullMoveNumber, this._parentNode.positionBefore)
+		return new Node(this._parentNode._info, this._parentNode._parentVariation, this._parentNode._fullMoveNumber, this._parentNode._positionBefore)
 	}
 }
 
