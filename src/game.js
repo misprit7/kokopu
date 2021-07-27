@@ -751,14 +751,18 @@ function Variation(info, initialFullMoveNumber, initialPosition, withinLongVaria
 		this._initialFullMoveNumber = initialFullMoveNumber;
 		this._initialPosition = initialPosition;
 		this._withinLongVariation = withinLongVariation && info.isLongVariation;
-		this._parentVariation = parentNode
+		this._parentNode = parentNode
 	}
 }
 
 
 
 Variation.prototype.parentNode = function() {
-	return new Node(this._parentNode.info, this._parentNode.parentVariation, this.parentNode.fullMoveNumber, this._parentNode.positionBefore)
+	if(this._parentNode == null){
+		return null
+	} else {
+		return new Node(this._parentNode.info, this._parentNode.parentVariation, this.parentNode.fullMoveNumber, this._parentNode.positionBefore)
+	}
 }
 
 /**
