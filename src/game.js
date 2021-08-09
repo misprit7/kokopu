@@ -740,7 +740,7 @@ function createVariationInfo(isLongVariation) {
  */
 function Variation(info, initialFullMoveNumber, initialPosition, withinLongVariation, parentNode) {
 	if (arguments[0] instanceof Variation) {
-		variation = arguments[0]
+		let variation = arguments[0]
 		this._info = variation._info
 		this._initialFullMoveNumber = variation.initialFullMoveNumber
 		this._initialPosition = variation._initialFullMoveNumber
