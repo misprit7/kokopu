@@ -743,7 +743,7 @@ function Variation(info, initialFullMoveNumber, initialPosition, withinLongVaria
 		let variation = arguments[0]
 		this._info = variation._info
 		this._initialFullMoveNumber = variation._initialFullMoveNumber
-		this._initialPosition = variation._initialFullMoveNumber
+		this._initialPosition = variation._initialPosition
 		this._withinLongVariation = variation._withinLongVariation
 		this._parentNode = variation._parentNode
 	} else {
